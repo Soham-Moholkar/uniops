@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL 16 ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: uniops_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uniops_admin
+      POSTGRES_PASSWORD: uniops_secret_2026
+      POSTGRES_DB: uniops_campus
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./sql/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      - ./sql/views.sql:/docker-entrypoint-initdb.d/03_views.sql
+      - ./sql/procedures.sql:/docker-entrypoint-initdb.d/04_procedures.sql
+      - ./sql/triggers.sql:/docker-entrypoint-initdb.d/05_triggers.sql
+      - ./sql/roles.sql:/docker-entrypoint-initdb.d/06_roles.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uniops_admin -d uniops_campus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── MongoDB 7 ──
+  mongo:
+    image: mongo:7
+    container_name: uniops_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
+  mongo_data:
